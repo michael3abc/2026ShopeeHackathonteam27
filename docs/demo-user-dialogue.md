@@ -3,6 +3,14 @@
 本腳本用於展示「有邊界、可追溯」的退貨 Agent，不是要讓 Agent 猜中
 退款答案。所有素材都是合成 Demo 圖；退款與 Memory 都是隔離環境資料。
 
+## 操作錄影
+
+- [Demo 影片](assets/return-atlas-demo.mp4)：案例 `CASE-85B8FBC9`，展示補件、恢復評估、驗證與獨立審核的 UI 流程。
+- [原始 Google Drive 影片](https://drive.google.com/file/d/10Kug2dNGocHp4yZJURIWZTtFtvI5AMWJ/view)：`team27-live-e2e-evidence-request-CASE-85B8FBC9-1080p.mp4`；repo 保存原始位元組，未剪輯或重新編碼。
+- 規格：97.72 秒、1920 × 1080、H.264、無音軌、6,086,104 bytes。[README 預覽圖](assets/return-atlas-demo-preview.jpg) 擷取自第 60 秒。
+- SHA-256：`d2d911ad8ad41d4c985b92f45ea52184c8ac142c5b3cf2d36575479e7be15d06`。
+- 此影片為操作展示，不是效能 benchmark、正式金流驗證或 Memory 效益實驗；畫面顯示的完成狀態不能替代後端 ledger 驗證。
+
 ## 開場（15 秒）
 
 > 今天不是示範一個會聊天的客服機器人。我會先提供不足的證據，讓 Agent
@@ -80,4 +88,3 @@
   A/B/C retrieval 對照，所以不能聲稱 Memory 已被因果證明能提升下一案準確率。
 - 現場使用 Terra 時，補件／裁決路徑會隨模型輸出與證據而變；若未出現預期
   evidence request，保留該案例紀錄，不要重跑到看起來成功為止。
-

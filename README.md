@@ -6,6 +6,16 @@ Team 27 為電商退貨退款流程設計的 Agent 系統。它將使用者對�
 
 > 本 README 是專案入口與整體規格摘要。欄位、狀態與 wire contract 以 [`apps/contracts`](apps/contracts/README.md) 的程式碼及生成 schema 為準；Agent 不變條件以 [`docs/spec`](docs/spec/README.md) 為準；資料庫結構以各服務 migration 為準。
 
+## Demo 影片
+
+從證據不足、要求補件，到補充圖片後恢復評估、驗證與獨立審核，展示退貨案件的操作流程與可追蹤決策。點擊預覽圖開啟影片檔。
+
+[![觀看 Return Atlas Demo：補件、恢復執行與獨立審核](docs/assets/return-atlas-demo-preview.jpg)](docs/assets/return-atlas-demo.mp4)
+
+[觀看影片檔](docs/assets/return-atlas-demo.mp4) · [下載 MP4](https://github.com/michael3abc/2026ShopeeHackathonteam27/raw/refs/heads/main/docs/assets/return-atlas-demo.mp4) · [Google Drive 播放](https://drive.google.com/file/d/10Kug2dNGocHp4yZJURIWZTtFtvI5AMWJ/view) · [Demo 腳本與素材說明](docs/demo-user-dialogue.md)
+
+> 約 1 分 38 秒，1080p，無音軌。影片使用合成 Demo 案例與圖片；退款為模擬執行，並非正式 Shopee 訂單或金流整合。這是操作錄影，與 Architecture Explorer 的靜態示意回放不同；不代表已量測 Memory 對後續案件的改善。
+
 ## 1. 專案定位
 
 Return Atlas 解決的不是單一聊天回覆，而是「退款申請如何安全地從自然語言走到可執行結果」：
