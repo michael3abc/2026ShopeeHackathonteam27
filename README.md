@@ -2,15 +2,15 @@
 
 Team 27 為電商退貨退款流程設計的 Agent 系統。它將使用者對話、政策檢索、證據評估、獨立審核、人工授權、退回履約與退款執行拆成可追蹤、可恢復、可稽核的工作流。
 
-[線上 Architecture Explorer](https://michael3abc.github.io/2026ShopeeHachathonteam27/) · [Agent 規格](docs/spec/README.md) · [開發進度與驗證證據](docs/progress.md) · [本機執行手冊](scripts/README.md)
+[線上 Architecture Explorer](https://michael3abc.github.io/2026ShopeeHackathonteam27/) · [Agent 規格](docs/spec/README.md) · [開發進度與驗證證據](docs/progress.md) · [本機執行手冊](scripts/README.md)
 
 > 本 README 是專案入口與整體規格摘要。欄位、狀態與 wire contract 以 [`apps/contracts`](apps/contracts/README.md) 的程式碼及生成 schema 為準；Agent 不變條件以 [`docs/spec`](docs/spec/README.md) 為準；資料庫結構以各服務 migration 為準。
 
 ## Demo 影片
 
-從證據不足、要求補件，到補充圖片後恢復評估、驗證與獨立審核，展示退貨案件的操作流程與可追蹤決策。點擊預覽圖開啟影片檔。
+從證據不足、要求補件，到補充圖片後恢復評估、驗證與獨立審核，展示退貨案件的操作流程與可追蹤決策。可直接使用下方播放器觀看。
 
-[![觀看 Return Atlas Demo：補件、恢復執行與獨立審核](docs/assets/return-atlas-demo-preview.jpg)](docs/assets/return-atlas-demo.mp4)
+https://github.com/user-attachments/assets/f67e6288-6c3c-4cc5-9cf1-ed86b1656320
 
 [觀看影片檔](docs/assets/return-atlas-demo.mp4) · [下載 MP4](https://github.com/michael3abc/2026ShopeeHackathonteam27/raw/refs/heads/main/docs/assets/return-atlas-demo.mp4) · [Google Drive 播放](https://drive.google.com/file/d/10Kug2dNGocHp4yZJURIWZTtFtvI5AMWJ/view) · [Demo 腳本與素材說明](docs/demo-user-dialogue.md)
 
@@ -132,7 +132,7 @@ parse_request → request_clarification → load_case_context → retrieve_polic
 → enqueue_memory_distillation → terminate_automation
 ```
 
-上列是 node inventory，不代表單一路徑。Conditional routes 包含澄清、補件、Policy confirmation、Verification retry、Reviewer revision、Human Review、成功 handoff 與 fail-closed termination。完整 edges、state read/write 與 source references 請使用 [Architecture Explorer](https://michael3abc.github.io/2026ShopeeHachathonteam27/#architecture/exact/parse_request)。
+上列是 node inventory，不代表單一路徑。Conditional routes 包含澄清、補件、Policy confirmation、Verification retry、Reviewer revision、Human Review、成功 handoff 與 fail-closed termination。完整 edges、state read/write 與 source references 請使用 [Architecture Explorer](https://michael3abc.github.io/2026ShopeeHackathonteam27/#architecture/exact/parse_request)。
 
 ### 4.3 Policy、審核與授權
 

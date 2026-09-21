@@ -92,7 +92,7 @@ JSON 生成檔供檢視與重現；請修改 Python source，再重新 build，�
 
 ## 發布 GitHub Pages
 
-GitHub Actions workflow 會在 `main` 的 `presentation/**` 更新後發布；仍需 repository Settings → Pages 的 Source 選為 **GitHub Actions**。部署成功後入口為 `https://michael3abc.github.io/2026ShopeeHachathonteam27/`。
+GitHub Actions workflow 會在 `main` 的 `presentation/**` 更新後發布；仍需 repository Settings → Pages 的 Source 選為 **GitHub Actions**。部署成功後入口為 `https://michael3abc.github.io/2026ShopeeHackathonteam27/`。Repository 改名時須同步更新 Pages 連結；舊專案網站網址不會自動轉址。
 
 以 GitHub Actions 建置後，只上傳 `presentation/dist/` 作為 Pages artifact，使用標準 Pages deployment 工作流程發布。請勿發布整個 repo、`.env`、runtime 資料或 node_modules。
 

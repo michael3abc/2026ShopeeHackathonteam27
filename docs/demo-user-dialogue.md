@@ -6,6 +6,7 @@
 ## 操作錄影
 
 - [Demo 影片](assets/return-atlas-demo.mp4)：案例 `CASE-85B8FBC9`，展示補件、恢復評估、驗證與獨立審核的 UI 流程。
+- [GitHub 影片附件](https://github.com/user-attachments/assets/f67e6288-6c3c-4cc5-9cf1-ed86b1656320)：與 repo 原片相同；README 將附件網址獨立成段，以顯示原生播放器，而非圖片連結。
 - [原始 Google Drive 影片](https://drive.google.com/file/d/10Kug2dNGocHp4yZJURIWZTtFtvI5AMWJ/view)：`team27-live-e2e-evidence-request-CASE-85B8FBC9-1080p.mp4`；repo 保存原始位元組，未剪輯或重新編碼。
 - 規格：97.72 秒、1920 × 1080、H.264、無音軌、6,086,104 bytes。[README 預覽圖](assets/return-atlas-demo-preview.jpg) 擷取自第 60 秒。
 - SHA-256：`d2d911ad8ad41d4c985b92f45ea52184c8ac142c5b3cf2d36575479e7be15d06`。
