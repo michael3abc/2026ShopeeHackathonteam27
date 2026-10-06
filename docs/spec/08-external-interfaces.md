@@ -600,6 +600,97 @@ Agent 產出、由外部消費的三個輸出。它們不是 Agent 呼叫的介�
 
 Compose 將 repository 內版本化 `config/reviewer-gates.json` 以 read-only bind mount 提供給 API 與 Agent Service；兩個服務使用相同 container path。設定版本與 fingerprint 必須一致，門檻只存在 JSON，不由 Compose environment 攜帶。
 
+<a id="system-ownership"></a>
+
+## 整合系統責任與狀態所有權
+
+```mermaid
+flowchart LR
+    U[Buyer / Reviewer / Operator] -->|HTTPS| W[Next.js Web]
+    W -->|REST + SSE| A[FastAPI BFF / Case API]
+    A -->|canonical state / outbox / ledger| AD[(API PostgreSQL)]
+    A -->|Agent commands| R[(Redis Streams)]
+    R -->|at-least-once command| S[Agent Service Workers]
+    S -->|typed events / activities| R
+    R -->|project + ACK after commit| A
+    S --> G[LangGraph Runtime]
+    G -->|checkpoint / journal / replay| GD[(Agent PostgreSQL)]
+    G -->|internal typed HTTP Providers| A
+    G -->|structured output| M[Model Gateway]
+    A -->|vectors| E[Embedding Endpoint]
+    A -->|authorized mutation boundary| P[Refund / Platform Provider]
+```
+
+### 服務責任
+
+| Component | 擁有 | 不擁有 |
+| --- | --- | --- |
+| `apps/web` | Browser UI state、表單、案例／Activity 顯示、同源 API proxy | canonical case state、角色判定、Graph resume、退款授權 |
+| `apps/api` | Case lifecycle、Demo session、RBAC、API DB、outbox、SSE projection、Policy／Evidence／Verification／Human Review／履約／退款能力 | LangGraph 執行、Agent checkpoint、模型推理 |
+| `apps/agent_service` | Redis workers、composition、command journal、checkpoint adapter、Activity／Memory workers | Public browser API、API DB、canonical case state、退款 mutation |
+| `packages/agent_runtime` | 18-node LangGraph、typed working state、routing、prompts、模型與 Provider contracts 的使用方式 | Queue、HTTP server、business DB、UI state |
+| `apps/contracts` | 跨服務 DTO、enum、validation、JSON Schema、HTTP／Redis adapter contracts | 服務 orchestration 或持久化實作 |
+| API PostgreSQL | 案件、事件、政策、證據、授權、履約、退款 ledger、Memory vector index | Graph checkpoint 與 Agent command journal |
+| Agent PostgreSQL | LangGraph checkpoint、command journal、Memory replay／completion join | canonical business lifecycle 與付款 ledger |
+| Redis | Commands、events、activities、Memory jobs 的 at-least-once transport | 任何 canonical business truth |
+
+### 狀態所有權
+
+以下狀態不可互相替代：
+
+1. **Backend business state**：`CaseStatus` 由 API 擁有並投影給 Web。
+2. **Agent execution state**：`AgentState` 只描述 LangGraph 目前工作資料。
+3. **Checkpoint / journal state**：由 Agent PostgreSQL 支援 resume、去重與重播。
+4. **Frontend UI state**：由 API response／SSE event 映射，不直接訂閱完整 `AgentState`。
+5. **Background state**：Activity narration 與 Memory distillation 可在案件 terminal 後繼續。
+
+### 跨服務路徑
+
+```text
+User action
+  → Web handler
+  → Case API transaction
+  → PostgreSQL transactional outbox
+  → Redis command
+  → Agent Service worker
+  → LangGraph + typed HTTP Providers
+  → Redis lifecycle / terminal events
+  → API transaction + projection
+  → REST / SSE
+  → Web state update
+```
+
+API 不同步呼叫 LangGraph。Command 與 event 均可能重送，因此 command journal、event hash、projection cursor、outbox 與 side-effect key 必須維持冪等。
+
+### 主要角色
+
+| Actor | 權限與責任 |
+| --- | --- |
+| Buyer | 建立自己的案件、補充說明／證據、確認 Policy path 與退回要求。 |
+| Reviewer | 查看授權 dossier，執行 `APPROVE`、`EDIT` 或 `REJECT`；不同於 LLM `reviewer` node。 |
+| Operator | 以受限 Demo 介面模擬可信物流與驗收事件；不能任意指定付款結果。 |
+| Agent Service | 消費 command、執行 LangGraph、呼叫 typed Providers 並發布事件。 |
+| API / BFF | 擁有 canonical case state、身份／角色、資料持久化、投影、履約與退款邊界。 |
+
+### 整合能力與邊界
+
+| 能力 | 目前狀態 | 說明 |
+| --- | --- | --- |
+| 對話 intake、澄清、補件與 resume | 已實作 | LangGraph interrupt/checkpoint；API 以 typed command 恢復。 |
+| Policy v1 / v2 | 已實作 | v2 支援猶豫期、到貨損壞、寄錯商品、獨立品項未交付及 path confirmation。 |
+| Evidence 與圖片附件 | 已實作 | JPEG／PNG／WebP；`ASSESS`、`PROPOSE_OR_REVISE`、`REVIEW` 可載入實際像素。 |
+| Verification、Reviewer 與修訂迴圈 | 已實作 | Reviewer 只輸出 `APPROVE`／`REVISE`；修訂耗盡轉 Human Review。 |
+| Monetary / User Risk gates | 已實作 | Reviewer `APPROVE` 後由 deterministic code 決定自動化授權，不改寫 Reviewer verdict。 |
+| Human Review | Demo 已實作 | 有角色投影、dossier integrity 與持久化結果；正式企業身份與 approval workflow 待接入。 |
+| Return fulfillment | Demo 已實作 | 支援退回確認、到貨、驗收、爭議與逾期，付款僅在完整條件通過後釋放。 |
+| Refund application | Deterministic Demo | 有 reservation、ledger、冪等與 UNKNOWN recovery；不是 Shopee 正式金流。 |
+| Operational Memory | 已實作 | 結案後非同步 distillation；candidate 必須經外部治理核准才可檢索。 |
+| 真實 LLM / Embedding call | 可配置 | 支援 OpenAI-compatible Chat／Responses 與 embedding endpoint；需另備授權 endpoint 與 key。 |
+| Shopee Open API read/write | 待整合 | 目前 Order／Evidence 含 versioned fixture Providers，不宣稱正式商家或訂單串接完成。 |
+| Architecture Explorer | 已發布 | 靜態網站，內容與案例不需要 Backend；案例明確標示為 Illustrative。 |
+
+本專案不宣稱 production-ready 金流、正式 Shopee Open API 整合、真實客戶資料驗證、模型 latency／token benchmark，或已量測的學習效果。
+
 ## API 與 Agent Service 邊界
 
 LangGraph library 部署於獨立的 Agent Service，由 Redis Streams 非同步接收

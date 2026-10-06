@@ -63,6 +63,21 @@ Agent 團隊仍負責定義外部結果如何影響 graph routing。例如 Verif
 7. [Claim Registry](07-claim-registry.md)：claim 的受控詞彙與版本規則。
 8. [External Interfaces](08-external-interfaces.md)：遞交給其他團隊的 Provider 介面需求與 Demo/UI adapter boundary。
 
+## 規格與變更管理
+
+任何跨服務 contract、Graph route、CaseStatus、DB schema、Policy evaluator、authorization gate、Provider 或部署 profile 變更，必須在同一個 logical change 中：
+
+1. 更新 executable contracts 與生成 schema。
+2. 更新受影響的 `docs/spec` canonical 文件。
+3. 新增或更新 deterministic tests；需要時補 migration／recovery 測試。
+4. 更新 Architecture Explorer 的 baseline、entities、scenarios 與 source manifest。
+5. 執行 contract drift、Python、Web、Explorer 與必要 live-profile 驗證。
+6. 明確記錄「Source verified」「Recorded execution」「Test fixture」「Illustrative」的差異。
+
+`presentation/verify-architecture-sync.py` 會偵測 Graph、API、contracts、DB、Frontend mapping 或 deployment source 在 Explorer baseline 後的變更；若架構內容未同步，CI 必須失敗而不是發布過期網站。
+
+公開文件採英文 README 與繁中 README 同步維護：兩版必須描述相同能力、證據與限制，且不得改寫固定歷史快照。架構展示的 baseline、建置與發布流程見 [presentation 維護手冊](../../presentation/README.md)。
+
 ## 全域不變條件
 
 ### 職責邊界

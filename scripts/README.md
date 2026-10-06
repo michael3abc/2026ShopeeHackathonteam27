@@ -4,6 +4,114 @@
 
 Repository-wide development and CI helpers belong here. Prefer the root `Makefile` for stable entry points.
 
+## 開發前置需求
+
+- Python `3.12.0`
+- [`uv`](https://docs.astral.sh/uv/)
+- Node.js `22.23.2` 與 npm
+- Docker Engine、Docker Compose v2
+- 真模型整合時：授權的 model／embedding endpoint、各自的 client key、internal service token
+
+<a id="offline-checks"></a>
+
+## 不呼叫真實模型的測試
+
+這組命令不要求 live LLM 或正式外部服務：
+
+```bash
+uv sync --locked --all-packages
+npm --prefix apps/web ci
+make check
+make check-web
+```
+
+`make check` 會執行 Contracts、API、Agent Runtime、Agent Service 與 cross-service tests；`make check-web` 會執行 Web unit tests、lint 與 production build。
+
+安裝依賴需要網路；「不呼叫真實模型」不表示安裝流程離線。外部 PostgreSQL／Redis 驗證另需隔離測試資源，未設定時可能 skip，不能以此宣稱外部服務驗收完成。
+
+<a id="integrated-demo-setup"></a>
+
+## 完整整合 Demo：私密設定
+
+若尚無 `.env`，先由範例建立未追蹤設定；已有 `.env` 時跳過 `cp`，不要覆寫或提交憑證：
+
+```bash
+cp .env.example .env
+mkdir -p .secrets
+chmod 700 .secrets
+```
+
+在 `.env` 設定下列檔案路徑與 endpoint：
+
+```dotenv
+RETURN_AGENT_MODEL_API_KEY_FILE=.secrets/model_api_key
+RETURN_AGENT_EMBEDDING_API_KEY_FILE=.secrets/embedding_api_key
+RETURN_AGENT_INTERNAL_SERVICE_TOKEN_FILE=.secrets/internal_service_token
+RETURN_AGENT_DEMO_IDENTITIES_FILE=.secrets/demo_identities.json
+```
+
+另將 `.env.example` 的 `RETURN_AGENT_MODEL_BASE_URL` 與 `RETURN_AGENT_EMBEDDING_BASE_URL` 改為實際授權 endpoint；範例中的 `.invalid` 位址不可直接執行。保留既有 `.env` 時不要覆寫其設定。
+
+Demo identities 必須保存 `buyer`／`reviewer`／`operator` 的個別 `credential_sha256` 與允許的 Web origin。格式、權限與 Compose host/container path 差異見 [API 認證說明](../apps/api/README.md#policy-v2-user-risk-與-demo-認證)；不得在 README、shell history、log 或 Git 中放明文 credential。
+
+## Docker Compose 啟動
+
+完整設定 model、embedding、internal token 與 Demo identities 後，可使用 Compose：
+
+```dotenv
+RETURN_AGENT_API_PROFILE=integrated-demo
+RETURN_AGENT_SERVICE_PROFILE=integrated-compass
+RETURN_AGENT_INTERNAL_SERVICE_TOKEN_HOST_FILE=.secrets/internal_service_token
+RETURN_AGENT_MODEL_API_KEY_HOST_FILE=.secrets/model_api_key
+RETURN_AGENT_EMBEDDING_API_KEY_HOST_FILE=.secrets/embedding_api_key
+RETURN_AGENT_DEMO_IDENTITIES_HOST_FILE=.secrets/demo_identities.json
+RETURN_AGENT_DEMO_IDENTITIES_CONTAINER_FILE=/run/secrets/demo_identities
+```
+
+Compose 使用 `*_HOST_FILE` 掛載 secret；下方的 host-process launcher 使用 `*_FILE`。兩者不可混用。
+
+```bash
+docker compose config --quiet
+docker compose up --build -d
+docker compose ps
+```
+
+預設 Compose ports 為 Web `3000`、API `8000`、Agent `8090`、API PostgreSQL `55432`、Agent PostgreSQL `55433`、Redis `56379`，皆只綁定 loopback，可由環境變數覆寫。不要在未配置 `integrated-demo` API 與明確 Agent profile 時將容器健康狀態視為完整功能驗收。
+
+Compose 與下方 host-process launcher 為兩種啟動方式，擇一使用，不要同時啟動而共用 DB 或 Redis namespace。常駐部署與主機服務管理另須遵守所在主機規範；launcher 指令不代表已安裝常駐服務。
+
+## 測試入口與驗收邊界
+
+| 目的 | 命令 | 是否呼叫 live model |
+| --- | --- | --- |
+| Python 全專案 deterministic suite | `make check` | 否 |
+| Web tests、lint、build | `make check-web` | 否 |
+| Contract 重新生成 | `make contracts && npm --prefix apps/web run contracts` | 否 |
+| Cross-service in-process E2E | `make test-e2e` | 否 |
+| Agent transport smoke | `uv run --package return-agent-service python scripts/run_agent_smoke.py` | 依 profile |
+| 舊 v1 stack 的 no-UI E2E | `uv run python scripts/run_no_ui_e2e.py --timeout 300` | 是 |
+| 舊 v1 stack 的 browser E2E | `npm --prefix apps/web run test:e2e:live` | 是 |
+| Architecture Explorer 內容檢查 | `npm --prefix presentation ci && npm --prefix presentation run check` | 否 |
+| Architecture Explorer browser 驗證 | `npm --prefix presentation run test:browser` | 否 |
+
+Live E2E 使用 synthetic order／evidence 與 deterministic refund adapter。成功只證明該 profile 的整合路徑，不代表正式 Shopee 訂單、物流或金流通過。
+
+CI 另外驗證 PostgreSQL migrations、downgrade protection、Redis Activity transport、generated contract drift、Web build、Compose config 與三個 Docker images。詳見 [`.github/workflows/checks.yml`](../.github/workflows/checks.yml)。
+
+## 設定、安全與部署不變條件
+
+- `.env`、`.secrets/`、runtime artifacts 與原始客戶資料不得進 Git。
+- 公開 browser session 使用 HttpOnly、SameSite cookie；狀態變更須驗證 Origin。
+- Agent Service 與 API internal Providers 使用獨立 Bearer service token；瀏覽器不可呼叫 internal routes。
+- Model gateway 上游 credential 留在 gateway server；此 repository 只使用被授權的 client key。
+- API 與 Agent 使用不同 PostgreSQL database 與 migration lineage，不得互相讀寫。
+- 新版程式不得重播不相容的舊 checkpoint、pending command/event 或 Memory job；升級前先排空、隔離或依 runbook 歸檔。
+- Policy、gate config、schema 或 model identity 變更必須版本化；不能靜默沿用舊 persisted decision。
+- Redis delivery 是 at-least-once；任何付款、review completion 與 projection 都必須依穩定 ID／hash 保持冪等。
+- Production profile 設定不完整時必須啟動失敗，不得退回 fake Provider 或 in-memory persistence。
+
+GitHub Pages 只發布 `presentation/dist/`，不發布 repository、設定、secret 或 runtime data。Architecture Explorer 本身不呼叫 Backend、LLM、GitHub API 或 CDN。
+
 ## Policy v2 隔離 launcher
 
 `local_import.py` 從指定 `.env` 讀取此機已授權的 model／embedding key files 與
